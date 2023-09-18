@@ -247,26 +247,44 @@ def drop_table_definition_without_storage(
       df: DataFrame,
       log:logs
    )-> int:
+   """
+   Drop from the metastore tables without data files in the storage layer.
+
+   Parameters
+   ----------
+   spark: SparkSession 
+      The entry point to spark on the remote cluster.
+   df:  dataframe 
+      A dataframe containg a list of tables with their metadata.
+      Here is the structure of the dataframe [Database,Table,Provider,Type,Location]
+   log: logs
+      An instance of custom log class.
+
+   Returns
+   -------
+   int
+      The number of deleted tables.
+   """
 
    deleted = 0 
 
    for row in df.collect(): 
-      log.trace(f'Checking table definition deletion for {row.Table}') 
+      log.trace(f'----------------- Checking table deletion for {row.Table} -----------------') 
 
       if row.Provider.lower() == 'delta': 
          if DeltaTable.isDeltaTable(spark,row.Location): 
-            log.trace(f'Is delta table: plus the data already exist in the storage layer. No need for deletion.') 
+            log.trace(f'isDeltaTable -> The data already exist in the storage layer. No need for deletion.') 
          else: 
-            log.trace(f"Is not valid delta table: Data doesn''t exist in the storage layer. Moving forward to delete the table definition from the schema {row.Database}.") 
+            log.trace(f"Is not a valid delta table -> The data doesn''t exist in the storage layer. Moving forward to delete the table from the schema {row.Database}.") 
             log.trace(f'drop table {row.Database}.{row.Table} ==> in progress ...') 
             spark.sql(f'drop table {row.Database}.{row.Table}') 
             log.trace(f'drop table {row.Database}.{row.Table} ==> done.') 
             deleted += 1 
       else: 
          if file_exists(row.Location): 
-            log.trace(f'Is parquet table: Plus the data already exist in the storage layer. No need for deletion.') 
+            log.trace(f'isParquetTable -> The data already exist in the storage layer. No need for deletion.') 
          else: 
-            log.trace(f"Is not valid parquet table: Data doesn''t exist in the storage layer. Moving forward to delete the table definition from the catalog {row.Database}.") 
+            log.trace(f"Is not a valid parquet table -> The data doesn''t exist in the storage layer. Moving forward to delete the table definition from the catalog {row.Database}.") 
             log.trace(f'drop table {row.Database}.{row.Table} ==> in progress ...')
             spark.sql(f'drop table {row.Database}.{row.Table}') 
             log.trace(f'drop table {row.Database}.{row.Table} ==> done.') 
