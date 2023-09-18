@@ -1,0 +1,5 @@
+pytest==7.4.0
+databricks-connect
+# only for local dev purposes
+#ipykernel
+#pytest-watch==4.2.0
